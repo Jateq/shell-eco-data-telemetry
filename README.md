@@ -47,7 +47,7 @@ The models are developed in MATLAB R2020b version and use the following MathWork
 7. Simulink Coder
 8. Statistics and Machine Learning Toolbox
 9. Vehicle Dynamics Blockset
-10. Model predictive control toolbox
+
 
 ## About the model
 The model shows the implementation of MPC on a vehicle moving in a US Highway scene:
