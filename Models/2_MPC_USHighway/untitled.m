@@ -5,34 +5,17 @@
 addpath(genpath('Images'));
 
 %% Load and parse the UTM coordinates for Lusail track
-% Load the MAT file containing waypoints
-mat_data = load('Lusail_Track_New.mat');
+% Load the UTM coordinates from the new CSV file
+track_data = readtable('Shifted_UTM_Coordinates__Relative_to_Origin_.csv', 'VariableNamingRule', 'preserve');
+track_data.Properties.VariableNames = {'Easting', 'Northing'};
 
-% Extract waypoints from the MAT file
-waypoints = mat_data.data.ActorSpecifications{1}.Waypoints;
-
-% Define main track centerline from waypoints
-xRef = waypoints(:, 1);
-yRef = waypoints(:, 2);
+% Define main track centerline from UTM coordinates
+xRef = track_data.Easting;
+yRef = track_data.Northing;
 
 % Define Track Width and Boundaries
 track_width = 12;  % Total width in meters
 half_width = track_width / 2;
-
-% Calculate track boundaries based on the centerline
-dx = gradient(xRef);
-dy = gradient(yRef);
-norm_factor = sqrt(dx.^2 + dy.^2);  % Normalize for perpendicular direction
-
-% Left and Right boundaries (offset by half of the track width)
-xLeft = xRef + half_width * (-dy ./ norm_factor);
-yLeft = yRef + half_width * (dx ./ norm_factor);
-xRight = xRef - half_width * (-dy ./ norm_factor);
-yRight = yRef - half_width * (dx ./ norm_factor);
-
-
-%% Define Vehicle and MPC Parameters
-% (Keep the rest of the code unchanged for vehicle dynamics, MPC, etc.)
 
 % Calculate track boundaries based on the centerline
 dx = gradient(xRef);
@@ -53,12 +36,13 @@ yRight = yRef - half_width * (dx ./ norm_factor);
 
 %% Original Vehicle Parameters and Simulation Settings (from US Highway)
 %% Define data for velocity lookup table
-lookUpt = readmatrix('velocityDistributionLusail_expanded.xlsx');
+lookUpt = readmatrix('velocityDistributionHighway.xlsx');
 xlt = lookUpt(2:42,1);
 ylt = lookUpt(1,2:31);
 vel = lookUpt(2:42,2:31)*4/5;
 
 %% Specify simulation stop time
+Ts = 1000*5/4;
 
 % Define vehicle parameters used in the models
 L = 10; % Bicycle length
@@ -71,6 +55,43 @@ psi_o = atan2(dy_initial, dx_initial);
 vehicle_x_position = [];
 vehicle_y_position = [];
 
+
+%% Simulation Parameters
+dt = 0.1; % Time step
+Ts = 100; % Total simulation time
+num_steps = floor(Ts / dt);
+vehicle_x_position = zeros(num_steps, 1);
+vehicle_y_position = zeros(num_steps, 1);
+vehicle_yaw = zeros(num_steps, 1);
+
+% Initialize vehicle state
+vehicle_x_position(1) = X_o;
+vehicle_y_position(1) = Y_o;
+vehicle_yaw(1) = psi_o;
+
+% Simulation loop
+for k = 2:num_steps
+    % Compute the desired position from the reference path
+    % You may need to interpolate if your time steps don't match
+    idx = min(k, length(xRef2s));
+    desired_x = xRef2s(idx);
+    desired_y = yRef2s(idx);
+
+    % Compute control inputs (steering angle, acceleration)
+    % For example, using a simple proportional controller
+    error_x = desired_x - vehicle_x_position(k-1);
+    error_y = desired_y - vehicle_y_position(k-1);
+    steering_angle = atan2(error_y, error_x) - vehicle_yaw(k-1);
+    acceleration = 0; % Assuming constant speed for simplicity
+
+    % Update vehicle state
+    vehicle_speed = Vx; % Assuming constant speed
+    vehicle_x_position(k) = vehicle_x_position(k-1) + vehicle_speed * cos(vehicle_yaw(k-1)) * dt;
+    vehicle_y_position(k) = vehicle_y_position(k-1) + vehicle_speed * sin(vehicle_yaw(k-1)) * dt;
+    vehicle_yaw(k) = vehicle_yaw(k-1) + (vehicle_speed / L) * tan(steering_angle) * dt;
+end
+
+% ... [plotting code] ...
 
 figure;
 plot(xRef, yRef, 'k-', 'LineWidth', 1.5); % Main track
@@ -112,7 +133,7 @@ yRef2s = smooth(gradbp, yRef2);
 curvature = getCurvature(xRef2, yRef2);
 
 %% Define Reference Time for Plotting
-Ts = 450 * 5/4;
+Ts = 45 * 5/4;
 tRef = linspace(0, Ts, length(gradbp));
 
 % Original MPC Model Parameters (same as US Highway)
@@ -175,3 +196,5 @@ function curvature = getCurvature(xRef, yRef)
     D2Y = gradient(DY);
     curvature = (DX .* D2Y - DY .* D2X) ./ (DX.^2 + DY.^2).^(3/2);
 end
+
+

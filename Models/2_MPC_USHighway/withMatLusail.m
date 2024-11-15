@@ -30,30 +30,27 @@ yLeft = yRef + half_width * (dx ./ norm_factor);
 xRight = xRef - half_width * (-dy ./ norm_factor);
 yRight = yRef - half_width * (dx ./ norm_factor);
 
+%% Visualization
+figure;
+plot(xRef, yRef, 'k-', 'LineWidth', 1.5); % Main track
+hold on;
+plot(xLeft, yLeft, 'r--', 'LineWidth', 1); % Left boundary
+plot(xRight, yRight, 'b--', 'LineWidth', 1); % Right boundary
+plot(X_o, Y_o, 'go', 'MarkerFaceColor', 'g'); % Starting point
+title('Vehicle Path Along Lusail Circuit Track');
+xlabel('Easting (m)');
+ylabel('Northing (m)');
+legend('Center Line', 'Left Boundary', 'Right Boundary', 'Starting Position');
+grid on;
+axis equal;
+hold off;
 
 %% Define Vehicle and MPC Parameters
 % (Keep the rest of the code unchanged for vehicle dynamics, MPC, etc.)
 
-% Calculate track boundaries based on the centerline
-dx = gradient(xRef);
-dy = gradient(yRef);
-norm_factor = sqrt(dx.^2 + dy.^2);  % Normalize for perpendicular direction
-
-% Left and Right boundaries (offset by half of the track width)
-xLeft = xRef + half_width * (-dy ./ norm_factor);
-yLeft = yRef + half_width * (dx ./ norm_factor);
-xRight = xRef - half_width * (-dy ./ norm_factor);
-yRight = yRef - half_width * (dx ./ norm_factor);
-
-%% Optional: Plot the track with boundaries for visualization
-
-
-
-
-
 %% Original Vehicle Parameters and Simulation Settings (from US Highway)
 %% Define data for velocity lookup table
-lookUpt = readmatrix('velocityDistributionLusail_expanded.xlsx');
+lookUpt = readmatrix('velocityDistributionHighway.xlsx');
 xlt = lookUpt(2:42,1);
 ylt = lookUpt(1,2:31);
 vel = lookUpt(2:42,2:31)*4/5;

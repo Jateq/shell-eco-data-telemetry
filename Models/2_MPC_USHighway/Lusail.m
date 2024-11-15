@@ -5,34 +5,17 @@
 addpath(genpath('Images'));
 
 %% Load and parse the UTM coordinates for Lusail track
-% Load the MAT file containing waypoints
-mat_data = load('Lusail_Track_New.mat');
+% Load the UTM coordinates from the new CSV file
+track_data = readtable('Shifted_UTM_Coordinates__Relative_to_Origin_.csv', 'VariableNamingRule', 'preserve');
+track_data.Properties.VariableNames = {'Easting', 'Northing'};
 
-% Extract waypoints from the MAT file
-waypoints = mat_data.data.ActorSpecifications{1}.Waypoints;
-
-% Define main track centerline from waypoints
-xRef = waypoints(:, 1);
-yRef = waypoints(:, 2);
+% Define main track centerline from UTM coordinates
+xRef = track_data.Easting;
+yRef = track_data.Northing;
 
 % Define Track Width and Boundaries
 track_width = 12;  % Total width in meters
 half_width = track_width / 2;
-
-% Calculate track boundaries based on the centerline
-dx = gradient(xRef);
-dy = gradient(yRef);
-norm_factor = sqrt(dx.^2 + dy.^2);  % Normalize for perpendicular direction
-
-% Left and Right boundaries (offset by half of the track width)
-xLeft = xRef + half_width * (-dy ./ norm_factor);
-yLeft = yRef + half_width * (dx ./ norm_factor);
-xRight = xRef - half_width * (-dy ./ norm_factor);
-yRight = yRef - half_width * (dx ./ norm_factor);
-
-
-%% Define Vehicle and MPC Parameters
-% (Keep the rest of the code unchanged for vehicle dynamics, MPC, etc.)
 
 % Calculate track boundaries based on the centerline
 dx = gradient(xRef);
@@ -53,7 +36,7 @@ yRight = yRef - half_width * (dx ./ norm_factor);
 
 %% Original Vehicle Parameters and Simulation Settings (from US Highway)
 %% Define data for velocity lookup table
-lookUpt = readmatrix('velocityDistributionLusail_expanded.xlsx');
+lookUpt = readmatrix('velocityDistributionHighway.xlsx');
 xlt = lookUpt(2:42,1);
 ylt = lookUpt(1,2:31);
 vel = lookUpt(2:42,2:31)*4/5;
