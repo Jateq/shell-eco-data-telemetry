@@ -5,7 +5,6 @@
 addpath(genpath('Images'));
 
 %% Load and parse the UTM coordinates for Lusail track
-% Load the MAT file containing waypoints
 mat_data = load('Lusail_Track_New.mat');
 
 % Extract waypoints from the MAT file
